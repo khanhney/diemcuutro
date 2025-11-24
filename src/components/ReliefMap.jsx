@@ -247,7 +247,7 @@ const ReliefPointPopup = ({ point, onMarkAsClosed }) => {
                   rel="noopener noreferrer"
                   className="contact-link"
                 >
-                  Facebook
+                  {point.contact_info.phone || 'Facebook'}
                 </a>
               </div>
             )}
@@ -380,7 +380,19 @@ const ReliefMap = () => {
 
       if (error) throw error
 
-      setReliefPoints(data || [])
+      // Parse contact_info if it's a string
+      const processedData = (data || []).map(point => {
+        if (point.contact_info && typeof point.contact_info === 'string') {
+          try {
+            point.contact_info = JSON.parse(point.contact_info)
+          } catch (e) {
+            console.error('Error parsing contact_info:', e)
+          }
+        }
+        return point
+      })
+
+      setReliefPoints(processedData)
     } catch (err) {
       console.error('Error fetching relief points:', err)
       setError(err.message)
@@ -410,23 +422,11 @@ const ReliefMap = () => {
   }
 
   const handleMarkAsClosed = async (pointId) => {
-    try {
-      const { error } = await supabase
-        .from('relief_points')
-        .update({ status: 'Closed' })
-        .eq('id', pointId)
+    // Show thank you message without updating database
+    alert('Cảm ơn bạn đã phản hồi! Chúng tôi sẽ xem xét và cập nhật sớm nhất.')
 
-      if (error) throw error
-
-      // Refresh the relief points list
-      fetchReliefPoints()
-
-      // Close any open popups
-      document.querySelector('.leaflet-popup-close-button')?.click()
-    } catch (err) {
-      console.error('Error marking point as closed:', err)
-      alert('Không thể cập nhật trạng thái. Vui lòng thử lại.')
-    }
+    // Close the popup
+    document.querySelector('.leaflet-popup-close-button')?.click()
   }
 
   // Calculate distance between two coordinates using Haversine formula
