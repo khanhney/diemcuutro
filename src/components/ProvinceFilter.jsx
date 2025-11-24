@@ -134,17 +134,11 @@ const ProvinceFilter = ({ onProvinceSelect, onClose }) => {
                 onClick={() => handleProvinceClick(province)}
               >
                 <div className="province-info">
-                  <span className="province-icon">
-                    {province.type === 'city' ? '🏙️' : '🏞️'}
-                  </span>
                   <div className="province-text">
                     <div className="province-name">{province.name}</div>
                     <div className="province-full-name">{province.fullName}</div>
                   </div>
                 </div>
-                {province.isCentral && (
-                  <span className="central-badge">Trực thuộc TW</span>
-                )}
                 {selectedProvince?.code === province.code && (
                   <svg className="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12"></polyline>

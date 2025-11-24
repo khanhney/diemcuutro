@@ -120,8 +120,8 @@
 }
 
 .search-input:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
 }
 
 .search-input::placeholder {
@@ -173,20 +173,20 @@
 }
 
 .chip:hover {
-  border-color: #eab308;
-  color: #eab308;
-  background: #fef9c3;
+  border-color: #60a5fa;
+  color: #60a5fa;
+  background: #eff6ff;
 }
 
 .chip-active {
-  background: linear-gradient(135deg, #eab308 0%, #fbbf24 100%);
-  border-color: #eab308;
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  border-color: #60a5fa;
   color: white;
 }
 
 .chip-active:hover {
-  background: linear-gradient(135deg, #ca8a04 0%, #eab308 100%);
-  border-color: #ca8a04;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-color: #3b82f6;
   color: white;
 }
 
@@ -196,8 +196,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 24px;
-  background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 100%);
-  border-bottom: 1px solid #fde68a;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-bottom: 1px solid #93c5fd;
   flex-shrink: 0;
   animation: slideDown 0.3s ease-out;
 }
@@ -226,12 +226,12 @@
 
 .selected-text {
   font-size: 14px;
-  color: #92400e;
+  color: #1e40af;
 }
 
 .selected-text strong {
   font-weight: 700;
-  color: #78350f;
+  color: #1e3a8a;
 }
 
 .clear-selection {
@@ -241,17 +241,17 @@
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #eab308;
+  color: #3b82f6;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
 }
 
 .clear-selection:hover {
-  background: #eab308;
+  background: #3b82f6;
   color: white;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(234, 179, 8, 0.3);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 .clear-selection:active {
@@ -264,7 +264,7 @@
   overflow-y: auto;
   padding: 8px;
   scrollbar-width: thin;
-  scrollbar-color: #fbbf24 #fef3c7;
+  scrollbar-color: #93c5fd #dbeafe;
 }
 
 .provinces-list::-webkit-scrollbar {
@@ -272,20 +272,20 @@
 }
 
 .provinces-list::-webkit-scrollbar-track {
-  background: #fef3c7;
+  background: #dbeafe;
   border-radius: 10px;
   margin: 4px 0;
 }
 
 .provinces-list::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #fbbf24 0%, #eab308 100%);
+  background: linear-gradient(180deg, #93c5fd 0%, #60a5fa 100%);
   border-radius: 10px;
   transition: all 0.2s;
 }
 
 .provinces-list::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #eab308 0%, #ca8a04 100%);
-  box-shadow: 0 0 6px rgba(234, 179, 8, 0.4);
+  background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
 }
 
 /* Province Item */
@@ -311,13 +311,13 @@
 }
 
 .province-selected {
-  background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 100%);
-  border-color: #eab308;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-color: #60a5fa;
 }
 
 .province-selected:hover {
-  background: linear-gradient(135deg, #fde68a 0%, #fef9c3 100%);
-  border-color: #ca8a04;
+  background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+  border-color: #3b82f6;
 }
 
 .province-info {
@@ -364,7 +364,7 @@
 }
 
 .check-icon {
-  color: #eab308;
+  color: #3b82f6;
   flex-shrink: 0;
   margin-left: 8px;
   animation: checkIn 0.3s ease-out;
@@ -405,7 +405,7 @@
 
 .reset-button {
   padding: 10px 20px;
-  background: linear-gradient(135deg, #eab308 0%, #fbbf24 100%);
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
   color: white;
   border: none;
   border-radius: 10px;
@@ -416,9 +416,9 @@
 }
 
 .reset-button:hover {
-  background: linear-gradient(135deg, #ca8a04 0%, #eab308 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(234, 179, 8, 0.3);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .reset-button:active {
@@ -561,70 +561,4 @@
   }
 }
 
-/* Dark mode support (optional) */
-@media (prefers-color-scheme: dark) {
-  .province-filter-modal {
-    background: #1f2937;
-  }
-
-  .filter-header,
-  .search-container,
-  .filter-chips {
-    border-bottom-color: #374151;
-  }
-
-  .filter-title {
-    color: #f9fafb;
-  }
-
-  .close-button {
-    color: #9ca3af;
-  }
-
-  .close-button:hover {
-    background: #374151;
-    color: #f9fafb;
-  }
-
-  .search-input {
-    background: #374151;
-    border-color: #4b5563;
-    color: #f9fafb;
-  }
-
-  .search-input::placeholder {
-    color: #6b7280;
-  }
-
-  .chip {
-    background: #374151;
-    border-color: #4b5563;
-    color: #d1d5db;
-  }
-
-  .chip:hover {
-    background: #4b5563;
-  }
-
-  .province-item {
-    background: #374151;
-  }
-
-  .province-item:hover {
-    background: #4b5563;
-    border-color: #6b7280;
-  }
-
-  .province-name {
-    color: #f9fafb;
-  }
-
-  .province-full-name {
-    color: #9ca3af;
-  }
-
-  .filter-footer {
-    background: #1f2937;
-    border-top-color: #374151;
-  }
-}
+/* Light mode always - Removed dark mode to maintain consistent light appearance */
