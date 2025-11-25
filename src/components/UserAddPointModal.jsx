@@ -108,7 +108,7 @@ export default function UserAddPointModal({ onClose, onSave }) {
             </svg>
           </div>
           <div className="header-text">
-            <h2>Thêm điểm tiếp nhận mới</h2>
+            <h2>Điểm tiếp nhận mới</h2>
             <p>Chia sẻ thông tin để giúp đỡ cộng đồng</p>
           </div>
           <button className="modal-close" onClick={onClose} aria-label="Đóng">

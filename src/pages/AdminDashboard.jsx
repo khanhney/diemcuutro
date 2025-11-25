@@ -27,6 +27,7 @@ import {
   MapPin,
   Plus,
 } from 'lucide-react'
+import { useAdminRole } from '../hooks/useAdminRole'
 
 export default function AdminDashboard() {
   const [points, setPoints] = useState([])
@@ -41,6 +42,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const activeTab = searchParams.get('tab') || 'all'
+  const { isAdmin, isReviewer } = useAdminRole()
 
   useEffect(() => {
     checkAuth()
@@ -320,14 +322,18 @@ export default function AdminDashboard() {
                               </>
                             )}
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(point.id)}
-                            className="text-[hsl(var(--color-destructive))]"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Xóa
-                          </DropdownMenuItem>
+                          {isAdmin && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(point.id)}
+                                className="text-[hsl(var(--color-destructive))]"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Xóa
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
@@ -422,14 +428,18 @@ export default function AdminDashboard() {
                         </>
                       )}
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => handleDelete(point.id)}
-                      className="text-[hsl(var(--color-destructive))]"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Xóa
-                    </DropdownMenuItem>
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => handleDelete(point.id)}
+                          className="text-[hsl(var(--color-destructive))]"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Xóa
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>

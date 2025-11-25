@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from '../components/AdminLayout'
+import { useAdminRole } from '../hooks/useAdminRole'
 import './ActivityLogs.css'
 
 export default function ActivityLogs() {
@@ -10,11 +11,23 @@ export default function ActivityLogs() {
   const [error, setError] = useState('')
   const [filterAction, setFilterAction] = useState('all')
   const navigate = useNavigate()
+  const { isAdmin, loading: roleLoading } = useAdminRole()
 
   useEffect(() => {
     checkAuth()
-    fetchLogs()
   }, [])
+
+  useEffect(() => {
+    if (!roleLoading) {
+      if (!isAdmin) {
+        // Redirect if not admin
+        navigate('/admin/dashboard')
+      } else {
+        // Fetch logs only if user is admin
+        fetchLogs()
+      }
+    }
+  }, [isAdmin, roleLoading])
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -67,12 +80,17 @@ export default function ActivityLogs() {
     return `${keys.length} fields`
   }
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <AdminLayout>
         <div className="admin-loading">Đang tải logs...</div>
       </AdminLayout>
     )
+  }
+
+  // Don't render anything if user is not admin (will be redirected)
+  if (!isAdmin) {
+    return null
   }
 
   return (

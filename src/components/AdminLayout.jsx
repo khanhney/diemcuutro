@@ -14,19 +14,21 @@ import {
 } from 'lucide-react'
 import { Button } from './ui/button'
 import { Separator } from './ui/separator'
+import { useAdminRole } from '../hooks/useAdminRole'
 
 export default function AdminLayout({ children }) {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
+  const { isAdmin, isReviewer } = useAdminRole()
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     navigate('/admin/login')
   }
 
-  const navItems = [
+  const baseNavItems = [
     {
       title: 'Tất cả điểm cứu trợ',
       icon: MapPin,
@@ -39,12 +41,18 @@ export default function AdminLayout({ children }) {
       href: '/admin/dashboard?tab=unverified',
       badge: null,
     },
+  ]
+
+  const adminOnlyItems = [
     {
       title: 'Activity Logs',
       icon: Activity,
       href: '/admin/activity-logs',
     },
   ]
+
+  // Only show Activity Logs for admin role
+  const navItems = isAdmin ? [...baseNavItems, ...adminOnlyItems] : baseNavItems
 
   const isActive = (href) => {
     if (href.includes('?')) {
