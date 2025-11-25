@@ -92,22 +92,30 @@
   margin-bottom: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+}
+
+.popup-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .popup-header-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
 }
 
 .popup-title {
   font-size: 18px;
   font-weight: 700;
-  margin: 0 0 8px 0;
+  margin: 0;
   color: white;
   line-height: 1.4;
+  flex: 1;
+  padding-right: 8px;
 }
 
 .status-badge {
@@ -200,6 +208,63 @@
   background: #f8fafc;
   text-align: center;
   border-top: 1px solid #f1f5f9;
+}
+
+/* Popup Share Button */
+.popup-share-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.popup-share-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.05);
+}
+
+.popup-share-btn:active {
+  transform: scale(0.95);
+}
+
+/* Toast Notification */
+.share-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: white;
+  padding: 14px 24px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.35);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.share-toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.share-toast svg {
+  flex-shrink: 0;
 }
 
 /* Popup Close Button */
@@ -421,6 +486,16 @@
     padding: 8px 16px;
   }
 
+  .popup-share-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .popup-share-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
   .popup-close-btn {
     width: 28px;
     height: 28px;
@@ -465,6 +540,18 @@
   }
 
   .source-link .facebook-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .share-toast {
+    top: 10px;
+    padding: 12px 20px;
+    font-size: 14px;
+    max-width: calc(100vw - 40px);
+  }
+
+  .share-toast svg {
     width: 18px;
     height: 18px;
   }

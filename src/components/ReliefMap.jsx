@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import { useEffect, useState, useRef } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import MarkerClusterGroup from 'react-leaflet-cluster'
 import L from 'leaflet'
 import { supabase } from '../lib/supabase'
@@ -135,15 +135,43 @@ const ReliefPointPopup = ({ point, onMarkAsClosed }) => {
     }
   }
 
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}?point=${point.id}`
+
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+
+      // Show toast notification
+      const toast = document.createElement('div')
+      toast.className = 'share-toast'
+      toast.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <span>Đã copy link điểm tiếp nhận!</span>
+      `
+      document.body.appendChild(toast)
+
+      // Trigger animation
+      setTimeout(() => toast.classList.add('show'), 10)
+
+      // Remove toast after 3 seconds
+      setTimeout(() => {
+        toast.classList.remove('show')
+        setTimeout(() => toast.remove(), 300)
+      }, 3000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+      // Fallback: show alert with link
+      alert(`Link đã được sao chép: ${shareUrl}`)
+    }
+  }
+
   return (
     <div className="popup-content">
       <div className="popup-header">
-        <h3 className="popup-title">{point.location_name || point.type}</h3>
-        <div className="popup-header-actions">
-          <span className={`status-badge status-${point.status.toLowerCase()}`}>
-            {point.status === 'Open' ? 'Đang hoạt động' :
-             point.status === 'Closed' ? 'Đã đóng' : 'Đã đầy'}
-          </span>
+        <div className="popup-header-top">
+          <h3 className="popup-title">{point.location_name || point.type}</h3>
           <button
             className="popup-close-btn"
             onClick={() => document.querySelector('.leaflet-popup-close-button')?.click()}
@@ -152,6 +180,26 @@ const ReliefPointPopup = ({ point, onMarkAsClosed }) => {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div className="popup-header-actions">
+          <span className={`status-badge status-${point.status.toLowerCase()}`}>
+            {point.status === 'Open' ? 'Đang hoạt động' :
+             point.status === 'Closed' ? 'Đã đóng' : 'Đã đầy'}
+          </span>
+          <button
+            className="popup-share-btn"
+            onClick={handleShare}
+            aria-label="Chia sẻ"
+            title="Chia sẻ địa điểm này"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
             </svg>
           </button>
         </div>
@@ -342,6 +390,45 @@ const AddPointButton = ({ onClick }) => {
   )
 }
 
+// Component to handle map focus when URL has point parameter
+const MapFocusHandler = ({ pointId, reliefPoints, markerRefs }) => {
+  const map = useMap()
+  const [hasZoomed, setHasZoomed] = useState(false)
+
+  useEffect(() => {
+    if (!pointId || !reliefPoints.length || hasZoomed) return
+
+    const point = reliefPoints.find(p => p.id === pointId)
+    if (!point) {
+      console.warn(`Point with id ${pointId} not found`)
+      return
+    }
+
+    // Wait for map to be fully loaded
+    map.whenReady(() => {
+      setTimeout(() => {
+        // Zoom to the point
+        map.setView([point.lat, point.lng], 15, {
+          animate: true,
+          duration: 1.5
+        })
+
+        // Open the popup after zoom
+        setTimeout(() => {
+          const markerRef = markerRefs.current[pointId]
+          if (markerRef) {
+            markerRef.openPopup()
+          }
+        }, 1000)
+
+        setHasZoomed(true)
+      }, 500)
+    })
+  }, [pointId, reliefPoints, map, hasZoomed, markerRefs])
+
+  return null
+}
+
 const ReliefMap = () => {
   const [reliefPoints, setReliefPoints] = useState([])
   const [loading, setLoading] = useState(true)
@@ -354,10 +441,63 @@ const ReliefMap = () => {
   const [nearbyFilter, setNearbyFilter] = useState(false)
   const [searchRadius, setSearchRadius] = useState(20) // Default 20km
   const [showRadiusSlider, setShowRadiusSlider] = useState(false)
+  const [focusPointId, setFocusPointId] = useState(null)
+  const markerRefs = useRef({})
 
   // Center map on Vietnam (tập trung vào miền Trung để thấy cả Hoàng Sa)
   const vietnamCenter = [14.5, 108.5] // Giữa Việt Nam, lệch về phía Đông để thấy Hoàng Sa
   const defaultZoom = 6.3
+
+  // Check URL params for point ID and update meta tags
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const pointId = urlParams.get('point')
+    if (pointId) {
+      setFocusPointId(pointId)
+    }
+  }, [])
+
+  // Update Open Graph meta tags when reliefPoints and focusPointId are available
+  useEffect(() => {
+    if (focusPointId && reliefPoints.length > 0) {
+      const point = reliefPoints.find(p => p.id === focusPointId)
+      if (point) {
+        updateMetaTags(point)
+      }
+    }
+  }, [focusPointId, reliefPoints])
+
+  const updateMetaTags = (point) => {
+    const title = `${point.location_name || point.type} - Điểm tiếp nhận cứu trợ`
+    const description = point.address || point.city || 'Điểm tiếp nhận cứu trợ cho người dân miền Trung'
+    const url = `${window.location.origin}?point=${point.id}`
+    const defaultImage = `${window.location.origin}/src/assets/banner-ca-nuoc-huong-ve-mien-trung.jpg`
+
+    // Update title
+    document.title = title
+
+    // Update or create meta tags
+    updateMetaTag('property', 'og:title', title)
+    updateMetaTag('property', 'og:description', description)
+    updateMetaTag('property', 'og:url', url)
+    updateMetaTag('property', 'og:image', defaultImage)
+    updateMetaTag('name', 'description', description)
+    updateMetaTag('property', 'twitter:title', title)
+    updateMetaTag('property', 'twitter:description', description)
+    updateMetaTag('property', 'twitter:image', defaultImage)
+  }
+
+  const updateMetaTag = (attr, attrValue, content) => {
+    let element = document.querySelector(`meta[${attr}="${attrValue}"]`)
+    if (element) {
+      element.setAttribute('content', content)
+    } else {
+      element = document.createElement('meta')
+      element.setAttribute(attr, attrValue)
+      element.setAttribute('content', content)
+      document.head.appendChild(element)
+    }
+  }
 
   useEffect(() => {
     fetchReliefPoints()
@@ -616,6 +756,11 @@ const ReliefMap = () => {
                 key={point.id}
                 position={[point.lat, point.lng]}
                 icon={getMarkerIcon(point.status)}
+                ref={(ref) => {
+                  if (ref) {
+                    markerRefs.current[point.id] = ref
+                  }
+                }}
               >
                 <Popup className="custom-popup" maxWidth={350}>
                   <ReliefPointPopup point={point} onMarkAsClosed={handleMarkAsClosed} />
@@ -623,6 +768,13 @@ const ReliefMap = () => {
               </Marker>
             ))}
           </MarkerClusterGroup>
+
+          {/* Handle auto-zoom when URL has point parameter */}
+          <MapFocusHandler
+            pointId={focusPointId}
+            reliefPoints={reliefPoints}
+            markerRefs={markerRefs}
+          />
         </MapContainer>
       </div>
 
