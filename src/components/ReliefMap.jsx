@@ -5,7 +5,7 @@ import L from 'leaflet'
 import { supabase } from '../lib/supabase'
 import IslandMarkers from './IslandMarkers'
 import ProvinceFilter from './ProvinceFilter'
-import AddPointModal from './AddPointModal'
+import UserAddPointModal from './UserAddPointModal'
 import 'leaflet/dist/leaflet.css'
 import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
@@ -628,6 +628,8 @@ const ReliefMap = () => {
 
       {/* Right Side Controls */}
       <div className="map-controls-right">
+        <AddPointButton onClick={handleAddPoint} />
+
         <button
           className={`nearby-button ${isLoadingLocation ? 'loading' : ''} ${nearbyFilter ? 'active' : ''}`}
           onClick={handleFindNearby}
@@ -706,9 +708,9 @@ const ReliefMap = () => {
 
       {/* Add Point Modal */}
       {showAddPointModal && (
-        <AddPointModal
+        <UserAddPointModal
           onClose={() => setShowAddPointModal(false)}
-          onPointAdded={handlePointAdded}
+          onSave={handlePointAdded}
         />
       )}
     </>
