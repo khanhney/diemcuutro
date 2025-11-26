@@ -378,8 +378,8 @@ const ReliefPointPopup = ({ point, onMarkAsClosed }) => {
 
 const MapLegend = ({ activeFilter, onFilterChange, isFiltering }) => {
   const filters = [
-    { id: 'relief', color: 'yellow', label: 'Điểm cứu trợ' },
-    { id: 'repair', color: 'red', label: 'Sửa xe miễn phí' },
+    { id: 'relief', color: 'yellow', label: 'Điểm gửi hàng' },
+    { id: 'repair', color: 'red', label: 'Điểm Sửa xe 0đ' },
     { id: 'closed', color: 'gray', label: 'Đã đóng' },
   ]
 
@@ -836,7 +836,7 @@ const ReliefMap = () => {
           {/* Markers cho các đảo Hoàng Sa và Trường Sa */}
           <IslandMarkers />
 
-          {/* Marker clustering cho relief points */}
+          {/* Marker clustering cho điểm cứu trợ (màu vàng) */}
           <MarkerClusterGroup
             chunkedLoading={true}
             maxClusterRadius={50}
@@ -849,72 +849,122 @@ const ReliefMap = () => {
             removeOutsideVisibleBounds={false}
             iconCreateFunction={(cluster) => {
               const count = cluster.getChildCount()
-              const markers = cluster.getAllChildMarkers()
-
-              // Kiểm tra xem tất cả markers trong cluster có phải là "Sửa xe miễn phí" không
-              const allRepair = markers.every(marker => {
-                const point = reliefPoints.find(p =>
-                  p.lat === marker.getLatLng().lat && p.lng === marker.getLatLng().lng
-                )
-                return point && point.type === 'Sửa xe miễn phí'
-              })
-
-              // Kiểm tra xem có ít nhất 1 marker là "Sửa xe miễn phí" không (cho mixed cluster)
-              const hasRepair = markers.some(marker => {
-                const point = reliefPoints.find(p =>
-                  p.lat === marker.getLatLng().lat && p.lng === marker.getLatLng().lng
-                )
-                return point && point.type === 'Sửa xe miễn phí'
-              })
-
               let sizeClass = 'small'
               if (count >= 10) {
                 sizeClass = 'large'
               } else if (count >= 5) {
                 sizeClass = 'medium'
               }
-
-              // Xác định màu cluster
-              let colorClass = ''
-              if (allRepair) {
-                colorClass = 'marker-cluster-repair' // Màu đỏ cho cluster toàn sửa xe
-              }
-
               return L.divIcon({
                 html: `<div><span>${count}</span></div>`,
-                className: `marker-cluster marker-cluster-${sizeClass} ${colorClass}`,
+                className: `marker-cluster marker-cluster-${sizeClass}`,
                 iconSize: L.point(40, 40)
               })
             }}
           >
             {reliefPoints
               .filter(point => {
-                // Filter out Full status
+                // Chỉ lấy điểm cứu trợ (không phải sửa xe)
+                if (point.type === 'Sửa xe miễn phí') return false
                 if (point.status === 'Full') return false
 
                 // Legend filter
                 if (legendFilter) {
                   switch (legendFilter) {
                     case 'relief':
-                      // Điểm cứu trợ: không phải sửa xe và đang mở
-                      return point.type !== 'Sửa xe miễn phí' && point.status === 'Open'
+                      return point.status === 'Open'
                     case 'repair':
-                      // Sửa xe miễn phí và đang mở
-                      return point.type === 'Sửa xe miễn phí' && point.status === 'Open'
+                      return false // Không hiển thị điểm cứu trợ khi lọc sửa xe
                     case 'closed':
-                      // Đã đóng
                       return point.status === 'Closed'
                     default:
                       return true
                   }
                 }
 
-                // If repair filter is active, only show "Sửa xe miễn phí" in Phú Yên
+                // If repair filter is active, hide relief points
                 if (repairFilterActive) {
-                  return point.type === 'Sửa xe miễn phí'
+                  return false
                 }
 
-                // If nearby filter is active, only show points within searchRadius
+                // If nearby filter is active
+                if (nearbyFilter && userLocation) {
+                  const distance = calculateDistance(
+                    userLocation.lat,
+                    userLocation.lng,
+                    point.lat,
+                    point.lng
+                  )
+                  return distance <= searchRadius
+                }
+
+                return true
+              })
+              .map((point) => (
+              <Marker
+                key={point.id}
+                position={[point.lat, point.lng]}
+                icon={getMarkerIcon(point.status, point.type)}
+                ref={(ref) => {
+                  if (ref) {
+                    markerRefs.current[point.id] = ref
+                  }
+                }}
+              >
+                <Popup className="custom-popup" maxWidth={350}>
+                  <ReliefPointPopup point={point} onMarkAsClosed={handleMarkAsClosed} />
+                </Popup>
+              </Marker>
+            ))}
+          </MarkerClusterGroup>
+
+          {/* Marker clustering cho điểm sửa xe miễn phí (màu đỏ) */}
+          <MarkerClusterGroup
+            chunkedLoading={true}
+            maxClusterRadius={50}
+            spiderfyOnMaxZoom={true}
+            showCoverageOnHover={false}
+            zoomToBoundsOnClick={true}
+            animate={true}
+            animateAddingMarkers={true}
+            disableClusteringAtZoom={18}
+            removeOutsideVisibleBounds={false}
+            iconCreateFunction={(cluster) => {
+              const count = cluster.getChildCount()
+              let sizeClass = 'small'
+              if (count >= 10) {
+                sizeClass = 'large'
+              } else if (count >= 5) {
+                sizeClass = 'medium'
+              }
+              return L.divIcon({
+                html: `<div><span>${count}</span></div>`,
+                className: `marker-cluster marker-cluster-${sizeClass} marker-cluster-repair`,
+                iconSize: L.point(40, 40)
+              })
+            }}
+          >
+            {reliefPoints
+              .filter(point => {
+                // Chỉ lấy điểm sửa xe miễn phí
+                if (point.type !== 'Sửa xe miễn phí') return false
+                if (point.status === 'Full') return false
+
+                // Legend filter
+                if (legendFilter) {
+                  switch (legendFilter) {
+                    case 'relief':
+                      return false // Không hiển thị sửa xe khi lọc điểm cứu trợ
+                    case 'repair':
+                      return point.status === 'Open'
+                    case 'closed':
+                      return point.status === 'Closed'
+                    default:
+                      return true
+                  }
+                }
+
+                // If nearby filter is active
                 if (nearbyFilter && userLocation) {
                   const distance = calculateDistance(
                     userLocation.lat,
@@ -962,7 +1012,7 @@ const ReliefMap = () => {
         <div className="repair-filter-wrapper">
           {repairFilterActive && (
             <div className="repair-active-label">
-              <span>Sửa xe miễn phí - Phú Yên</span>
+              <span>Sửa xe miễn phí 0đ</span>
               <button
                 className="repair-label-close"
                 onClick={handleRepairFilter}
@@ -989,7 +1039,7 @@ const ReliefMap = () => {
                 <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
               </svg>
             )}
-            <span className="repair-button-text">Sửa xe Phú Yên</span>
+            <span className="repair-button-text">Điểm sửa xe 0đ</span>
           </button>
         </div>
 
