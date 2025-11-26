@@ -863,6 +863,16 @@
   box-shadow: 0 6px 20px rgba(234, 179, 8, 0.5);
 }
 
+/* Cluster màu đỏ cho điểm sửa xe miễn phí */
+.marker-cluster-repair div {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  border-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.marker-cluster-repair:hover div {
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+}
+
 /* Disable cluster animation to prevent jitter */
 .marker-cluster {
   animation: none !important;

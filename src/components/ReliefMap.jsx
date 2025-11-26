@@ -849,20 +849,40 @@ const ReliefMap = () => {
             removeOutsideVisibleBounds={false}
             iconCreateFunction={(cluster) => {
               const count = cluster.getChildCount()
-              let size = 'small'
-              let clusterClass = 'marker-cluster-small'
+              const markers = cluster.getAllChildMarkers()
 
+              // Kiểm tra xem tất cả markers trong cluster có phải là "Sửa xe miễn phí" không
+              const allRepair = markers.every(marker => {
+                const point = reliefPoints.find(p =>
+                  p.lat === marker.getLatLng().lat && p.lng === marker.getLatLng().lng
+                )
+                return point && point.type === 'Sửa xe miễn phí'
+              })
+
+              // Kiểm tra xem có ít nhất 1 marker là "Sửa xe miễn phí" không (cho mixed cluster)
+              const hasRepair = markers.some(marker => {
+                const point = reliefPoints.find(p =>
+                  p.lat === marker.getLatLng().lat && p.lng === marker.getLatLng().lng
+                )
+                return point && point.type === 'Sửa xe miễn phí'
+              })
+
+              let sizeClass = 'small'
               if (count >= 10) {
-                size = 'large'
-                clusterClass = 'marker-cluster-large'
+                sizeClass = 'large'
               } else if (count >= 5) {
-                size = 'medium'
-                clusterClass = 'marker-cluster-medium'
+                sizeClass = 'medium'
+              }
+
+              // Xác định màu cluster
+              let colorClass = ''
+              if (allRepair) {
+                colorClass = 'marker-cluster-repair' // Màu đỏ cho cluster toàn sửa xe
               }
 
               return L.divIcon({
                 html: `<div><span>${count}</span></div>`,
-                className: `marker-cluster ${clusterClass}`,
+                className: `marker-cluster marker-cluster-${sizeClass} ${colorClass}`,
                 iconSize: L.point(40, 40)
               })
             }}
