@@ -366,22 +366,57 @@ const ReliefPointPopup = ({ point, onMarkAsClosed }) => {
   )
 }
 
-const MapLegend = () => {
+const MapLegend = ({ activeFilter, onFilterChange }) => {
+  const filters = [
+    { id: 'relief', color: 'yellow', label: 'Điểm cứu trợ' },
+    { id: 'repair', color: 'red', label: 'Sửa xe miễn phí' },
+    { id: 'closed', color: 'gray', label: 'Đã đóng' },
+  ]
+
+  const handleFilterClick = (filterId) => {
+    // Toggle filter: nếu đang active thì tắt, ngược lại bật
+    if (activeFilter === filterId) {
+      onFilterChange(null)
+    } else {
+      onFilterChange(filterId)
+    }
+  }
+
   return (
     <div className="map-legend">
-      <div className="legend-title">Chú thích</div>
-      <div className="legend-item">
-        <div className="legend-color yellow"></div>
-        <span>Điểm cứu trợ</span>
+      <div className="legend-header">
+        <div className="legend-title">Chú thích</div>
+        {activeFilter && (
+          <button
+            className="legend-clear-btn"
+            onClick={() => onFilterChange(null)}
+            title="Xóa bộ lọc"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        )}
       </div>
-      <div className="legend-item">
-        <div className="legend-color red"></div>
-        <span>Sửa xe miễn phí</span>
-      </div>
-      <div className="legend-item">
-        <div className="legend-color gray"></div>
-        <span>Đã đóng</span>
-      </div>
+      {filters.map((filter) => (
+        <div
+          key={filter.id}
+          className={`legend-item ${activeFilter === filter.id ? 'active' : ''}`}
+          onClick={() => handleFilterClick(filter.id)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && handleFilterClick(filter.id)}
+        >
+          <div className={`legend-color ${filter.color}`}></div>
+          <span>{filter.label}</span>
+          {activeFilter === filter.id && (
+            <svg className="legend-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          )}
+        </div>
+      ))}
     </div>
   )
 }
@@ -401,6 +436,15 @@ const AddPointButton = ({ onClick }) => {
       <span className="button-text">Thêm điểm tiếp nhận</span>
     </button>
   )
+}
+
+// Component to get map reference
+const MapRefSetter = ({ mapRef }) => {
+  const map = useMap()
+  useEffect(() => {
+    mapRef.current = map
+  }, [map, mapRef])
+  return null
 }
 
 // Component to handle map focus when URL has point parameter
@@ -455,7 +499,10 @@ const ReliefMap = () => {
   const [searchRadius, setSearchRadius] = useState(20) // Default 20km
   const [showRadiusSlider, setShowRadiusSlider] = useState(false)
   const [focusPointId, setFocusPointId] = useState(null)
+  const [repairFilterActive, setRepairFilterActive] = useState(false)
+  const [legendFilter, setLegendFilter] = useState(null) // 'relief', 'repair', 'closed'
   const markerRefs = useRef({})
+  const mapRef = useRef(null)
 
   // Center map on Vietnam (tập trung vào miền Trung để thấy cả Hoàng Sa)
   const vietnamCenter = [14.5, 108.5] // Giữa Việt Nam, lệch về phía Đông để thấy Hoàng Sa
@@ -661,6 +708,40 @@ const ReliefMap = () => {
     setSearchRadius(newRadius)
   }
 
+  // Handler cho filter sửa xe miễn phí tại Phú Yên
+  const handleRepairFilter = () => {
+    setRepairFilterActive(!repairFilterActive)
+    // Nếu bật filter, clear các filter khác
+    if (!repairFilterActive) {
+      setNearbyFilter(false)
+      setUserLocation(null)
+      setShowRadiusSlider(false)
+      setSelectedProvince(null)
+      setLegendFilter(null) // Clear legend filter
+
+      // Zoom đến Phú Yên (tọa độ trung tâm Phú Yên)
+      // Zoom level 9 để thấy toàn bộ tỉnh Phú Yên trên mobile
+      if (mapRef.current) {
+        mapRef.current.setView([13.1, 109.3], 9, {
+          animate: true,
+          duration: 1
+        })
+      }
+    }
+  }
+
+  // Handler cho legend filter
+  const handleLegendFilter = (filterId) => {
+    setLegendFilter(filterId)
+    // Clear các filter khác khi dùng legend filter
+    if (filterId) {
+      setRepairFilterActive(false)
+      setNearbyFilter(false)
+      setUserLocation(null)
+      setShowRadiusSlider(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -712,6 +793,9 @@ const ReliefMap = () => {
             maxZoom={20}
           />
 
+          {/* Get map reference */}
+          <MapRefSetter mapRef={mapRef} />
+
           {/* Markers cho các đảo Hoàng Sa và Trường Sa */}
           <IslandMarkers />
 
@@ -750,6 +834,28 @@ const ReliefMap = () => {
               .filter(point => {
                 // Filter out Full status
                 if (point.status === 'Full') return false
+
+                // Legend filter
+                if (legendFilter) {
+                  switch (legendFilter) {
+                    case 'relief':
+                      // Điểm cứu trợ: không phải sửa xe và đang mở
+                      return point.type !== 'Sửa xe miễn phí' && point.status === 'Open'
+                    case 'repair':
+                      // Sửa xe miễn phí và đang mở
+                      return point.type === 'Sửa xe miễn phí' && point.status === 'Open'
+                    case 'closed':
+                      // Đã đóng
+                      return point.status === 'Closed'
+                    default:
+                      return true
+                  }
+                }
+
+                // If repair filter is active, only show "Sửa xe miễn phí" in Phú Yên
+                if (repairFilterActive) {
+                  return point.type === 'Sửa xe miễn phí'
+                }
 
                 // If nearby filter is active, only show points within searchRadius
                 if (nearbyFilter && userLocation) {
@@ -794,6 +900,36 @@ const ReliefMap = () => {
       {/* Right Side Controls */}
       <div className="map-controls-right">
         <AddPointButton onClick={handleAddPoint} />
+
+        {/* Nút sửa xe miễn phí Phú Yên */}
+        <div className="repair-filter-wrapper">
+          {repairFilterActive && (
+            <div className="repair-active-label">
+              <span>Sửa xe miễn phí - Phú Yên</span>
+              <button
+                className="repair-label-close"
+                onClick={handleRepairFilter}
+                aria-label="Tắt filter"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+          )}
+          <button
+            className={`repair-filter-button ${repairFilterActive ? 'active' : ''}`}
+            onClick={handleRepairFilter}
+            aria-label="Điểm sửa xe miễn phí tại Phú Yên"
+            title="Điểm sửa xe miễn phí tại Phú Yên"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+            </svg>
+            <span className="repair-button-text">Sửa xe Phú Yên</span>
+          </button>
+        </div>
 
         <button
           className={`nearby-button ${isLoadingLocation ? 'loading' : ''} ${nearbyFilter ? 'active' : ''}`}
@@ -860,7 +996,7 @@ const ReliefMap = () => {
           </div>
         )}
 
-        <MapLegend />
+        <MapLegend activeFilter={legendFilter} onFilterChange={handleLegendFilter} />
       </div>
 
       {/* Province Filter Modal */}
