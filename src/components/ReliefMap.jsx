@@ -146,6 +146,9 @@ const ReliefPointPopup = ({ point, onMarkAsClosed }) => {
 
   const handleShare = async () => {
     const shareUrl = `${window.location.origin}?point=${point.id}`
+    const toastMessage = point.type === 'Sửa xe miễn phí'
+      ? 'Đã copy link điểm sửa xe!'
+      : 'Đã copy link điểm tiếp nhận!'
 
     try {
       await navigator.clipboard.writeText(shareUrl)
@@ -157,7 +160,7 @@ const ReliefPointPopup = ({ point, onMarkAsClosed }) => {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="20 6 9 17 4 12"></polyline>
         </svg>
-        <span>Đã copy link điểm tiếp nhận!</span>
+        <span>${toastMessage}</span>
       `
       document.body.appendChild(toast)
 
@@ -176,10 +179,17 @@ const ReliefPointPopup = ({ point, onMarkAsClosed }) => {
     }
   }
 
+  const isRepairPoint = point.type === 'Sửa xe miễn phí'
+
   return (
     <div className="popup-content">
-      <div className="popup-header">
+      <div className={`popup-header ${isRepairPoint ? 'popup-header-repair' : ''}`}>
         <div className="popup-header-top">
+          {isRepairPoint && (
+            <svg className="popup-type-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+            </svg>
+          )}
           <h3 className="popup-title">{point.location_name || point.type}</h3>
           <button
             className="popup-close-btn"
@@ -366,7 +376,7 @@ const ReliefPointPopup = ({ point, onMarkAsClosed }) => {
   )
 }
 
-const MapLegend = ({ activeFilter, onFilterChange }) => {
+const MapLegend = ({ activeFilter, onFilterChange, isFiltering }) => {
   const filters = [
     { id: 'relief', color: 'yellow', label: 'Điểm cứu trợ' },
     { id: 'repair', color: 'red', label: 'Sửa xe miễn phí' },
@@ -374,6 +384,7 @@ const MapLegend = ({ activeFilter, onFilterChange }) => {
   ]
 
   const handleFilterClick = (filterId) => {
+    if (isFiltering) return // Không cho click khi đang loading
     // Toggle filter: nếu đang active thì tắt, ngược lại bật
     if (activeFilter === filterId) {
       onFilterChange(null)
@@ -383,10 +394,15 @@ const MapLegend = ({ activeFilter, onFilterChange }) => {
   }
 
   return (
-    <div className="map-legend">
+    <div className={`map-legend ${isFiltering ? 'legend-filtering' : ''}`}>
+      {isFiltering && (
+        <div className="legend-loading-overlay">
+          <div className="legend-spinner"></div>
+        </div>
+      )}
       <div className="legend-header">
         <div className="legend-title">Chú thích</div>
-        {activeFilter && (
+        {activeFilter && !isFiltering && (
           <button
             className="legend-clear-btn"
             onClick={() => onFilterChange(null)}
@@ -402,15 +418,15 @@ const MapLegend = ({ activeFilter, onFilterChange }) => {
       {filters.map((filter) => (
         <div
           key={filter.id}
-          className={`legend-item ${activeFilter === filter.id ? 'active' : ''}`}
+          className={`legend-item ${activeFilter === filter.id ? 'active' : ''} ${isFiltering ? 'disabled' : ''}`}
           onClick={() => handleFilterClick(filter.id)}
           role="button"
-          tabIndex={0}
+          tabIndex={isFiltering ? -1 : 0}
           onKeyDown={(e) => e.key === 'Enter' && handleFilterClick(filter.id)}
         >
           <div className={`legend-color ${filter.color}`}></div>
           <span>{filter.label}</span>
-          {activeFilter === filter.id && (
+          {activeFilter === filter.id && !isFiltering && (
             <svg className="legend-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
@@ -501,6 +517,7 @@ const ReliefMap = () => {
   const [focusPointId, setFocusPointId] = useState(null)
   const [repairFilterActive, setRepairFilterActive] = useState(false)
   const [legendFilter, setLegendFilter] = useState(null) // 'relief', 'repair', 'closed'
+  const [isFiltering, setIsFiltering] = useState(false) // Loading state cho filter
   const markerRefs = useRef({})
   const mapRef = useRef(null)
 
@@ -710,29 +727,42 @@ const ReliefMap = () => {
 
   // Handler cho filter sửa xe miễn phí tại Phú Yên
   const handleRepairFilter = () => {
-    setRepairFilterActive(!repairFilterActive)
-    // Nếu bật filter, clear các filter khác
-    if (!repairFilterActive) {
+    const willActivate = !repairFilterActive
+
+    setIsFiltering(true)
+
+    // Nếu bật filter, clear các filter khác trước
+    if (willActivate) {
       setNearbyFilter(false)
       setUserLocation(null)
       setShowRadiusSlider(false)
       setSelectedProvince(null)
       setLegendFilter(null) // Clear legend filter
+    }
 
-      // Zoom đến Phú Yên (tọa độ trung tâm Phú Yên)
-      // Zoom level 9 để thấy toàn bộ tỉnh Phú Yên trên mobile
-      if (mapRef.current) {
+    // Set filter state
+    setRepairFilterActive(willActivate)
+
+    // Zoom đến Phú Yên sau khi state đã update
+    if (willActivate && mapRef.current) {
+      setTimeout(() => {
         mapRef.current.setView([13.1, 109.3], 9, {
           animate: true,
           duration: 1
         })
-      }
+      }, 100)
     }
+
+    // Tắt loading sau 300ms
+    setTimeout(() => {
+      setIsFiltering(false)
+    }, 300)
   }
 
   // Handler cho legend filter
   const handleLegendFilter = (filterId) => {
-    setLegendFilter(filterId)
+    setIsFiltering(true)
+
     // Clear các filter khác khi dùng legend filter
     if (filterId) {
       setRepairFilterActive(false)
@@ -740,6 +770,13 @@ const ReliefMap = () => {
       setUserLocation(null)
       setShowRadiusSlider(false)
     }
+
+    setLegendFilter(filterId)
+
+    // Tắt loading sau 300ms
+    setTimeout(() => {
+      setIsFiltering(false)
+    }, 300)
   }
 
   if (loading) {
@@ -919,14 +956,19 @@ const ReliefMap = () => {
             </div>
           )}
           <button
-            className={`repair-filter-button ${repairFilterActive ? 'active' : ''}`}
+            className={`repair-filter-button ${repairFilterActive ? 'active' : ''} ${isFiltering ? 'filtering' : ''}`}
             onClick={handleRepairFilter}
+            disabled={isFiltering}
             aria-label="Điểm sửa xe miễn phí tại Phú Yên"
             title="Điểm sửa xe miễn phí tại Phú Yên"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
-            </svg>
+            {isFiltering ? (
+              <div className="button-spinner"></div>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+              </svg>
+            )}
             <span className="repair-button-text">Sửa xe Phú Yên</span>
           </button>
         </div>
@@ -996,7 +1038,7 @@ const ReliefMap = () => {
           </div>
         )}
 
-        <MapLegend activeFilter={legendFilter} onFilterChange={handleLegendFilter} />
+        <MapLegend activeFilter={legendFilter} onFilterChange={handleLegendFilter} isFiltering={isFiltering} />
       </div>
 
       {/* Province Filter Modal */}
