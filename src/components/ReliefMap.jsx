@@ -70,8 +70,17 @@ const createCustomIcon = (color, glowColor) => {
 const yellowIcon = createCustomIcon('#eab308', '#fbbf24')
 const grayIcon = createCustomIcon('#6b7280', '#9ca3af')
 const orangeIcon = createCustomIcon('#f59e0b', '#fbbf24')
+const redIcon = createCustomIcon('#ef4444', '#f87171') // Màu đỏ cho sửa xe miễn phí
 
-const getMarkerIcon = (status) => {
+const getMarkerIcon = (status, type) => {
+  // Nếu là loại "Sửa xe miễn phí", dùng marker màu đỏ
+  if (type === 'Sửa xe miễn phí') {
+    if (status === 'Closed') {
+      return grayIcon
+    }
+    return redIcon
+  }
+
   switch (status) {
     case 'Open':
       return yellowIcon
@@ -80,7 +89,7 @@ const getMarkerIcon = (status) => {
     case 'Full':
       return orangeIcon
     default:
-      return redIcon
+      return yellowIcon
   }
 }
 
@@ -363,7 +372,11 @@ const MapLegend = () => {
       <div className="legend-title">Chú thích</div>
       <div className="legend-item">
         <div className="legend-color yellow"></div>
-        <span>Đang hoạt động</span>
+        <span>Điểm cứu trợ</span>
+      </div>
+      <div className="legend-item">
+        <div className="legend-color red"></div>
+        <span>Sửa xe miễn phí</span>
       </div>
       <div className="legend-item">
         <div className="legend-color gray"></div>
@@ -755,7 +768,7 @@ const ReliefMap = () => {
               <Marker
                 key={point.id}
                 position={[point.lat, point.lng]}
-                icon={getMarkerIcon(point.status)}
+                icon={getMarkerIcon(point.status, point.type)}
                 ref={(ref) => {
                   if (ref) {
                     markerRefs.current[point.id] = ref

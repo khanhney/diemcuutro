@@ -664,6 +664,10 @@
   background-color: #f59e0b;
 }
 
+.legend-color.red {
+  background-color: #ef4444;
+}
+
 
 /* Island markers styling */
 .island-marker {

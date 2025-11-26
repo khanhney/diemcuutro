@@ -142,6 +142,7 @@ export default function AddPointModal({ onClose, onSave }) {
                 <option value="Y tế">Y tế</option>
                 <option value="Thực phẩm">Thực phẩm</option>
                 <option value="Nước uống">Nước uống</option>
+                <option value="Sửa xe miễn phí">Sửa xe miễn phí</option>
               </select>
             </div>
 

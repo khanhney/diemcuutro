@@ -127,11 +127,14 @@ export default function EditPointModal({ point, onClose, onSave }) {
                 onChange={handleChange}
                 required
               >
-                <option value="relief_center">Trung tâm cứu trợ</option>
-                <option value="shelter">Nơi trú ẩn</option>
-                <option value="medical">Y tế</option>
-                <option value="food">Thực phẩm</option>
-                <option value="water">Nước uống</option>
+                <option value="Điểm tập kết">Điểm tập kết</option>
+                <option value="Điểm tiếp nhận">Điểm tiếp nhận</option>
+                <option value="Trung tâm cứu trợ">Trung tâm cứu trợ</option>
+                <option value="Nơi trú ẩn">Nơi trú ẩn</option>
+                <option value="Y tế">Y tế</option>
+                <option value="Thực phẩm">Thực phẩm</option>
+                <option value="Nước uống">Nước uống</option>
+                <option value="Sửa xe miễn phí">Sửa xe miễn phí</option>
               </select>
             </div>
 
